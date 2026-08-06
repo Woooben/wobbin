@@ -1,0 +1,20 @@
+  const DEMO=[
+    {id:'demo1',title:'Personalized interests',app:'Nova',flow:'New user onboarding',platform:'iOS',category:'Onboarding',collection:'Nova',elements:['Onboarding','Cards','Buttons'],tags:['interests','personalization'],imageUrl:demoSvg('Choose interests','Personalize your experience','#f8f1e7','#ed8058'),favorite:true,createdAt:'2026-08-06T08:00:00Z',demo:true},
+    {id:'demo2',title:'Search results',app:'Atlas',flow:'Search products',platform:'iOS',category:'Search',collection:'Atlas',elements:['Search','Cards','Navigation'],tags:['filters','results'],imageUrl:demoSvg('Explore','Search products and ideas','#f3f5f7','#4d86d8'),favorite:false,createdAt:'2026-08-05T08:00:00Z',demo:true},
+    {id:'demo3',title:'Product detail',app:'Mellow',flow:'Buy a product',platform:'iOS',category:'Commerce',collection:'Mellow',elements:['Cards','Buttons','Media'],tags:['product','checkout'],imageUrl:demoSvg('Arc lounge chair','A calm product detail page','#f7f3ec','#a66f45'),favorite:true,createdAt:'2026-08-04T08:00:00Z',demo:true},
+    {id:'demo4',title:'Performance overview',app:'Northstar',flow:'Analytics review',platform:'Web',category:'Dashboard',collection:'Northstar',elements:['Charts','Navigation','Cards'],tags:['analytics','dashboard'],imageUrl:demoSvg('Northstar','Performance overview','#f3f4f7','#7c8cff','web'),favorite:false,createdAt:'2026-08-03T08:00:00Z',demo:true},
+    {id:'demo5',title:'Upgrade plan',app:'Orbit',flow:'Upgrade subscription',platform:'Android',category:'Commerce',collection:'Orbit',elements:['Cards','Buttons','Lists'],tags:['membership','pricing'],imageUrl:demoSvg('Unlock Orbit Pro','Everything you need','#f0edf6','#785fb6'),favorite:false,createdAt:'2026-08-02T08:00:00Z',demo:true},
+    {id:'demo6',title:'Notification center',app:'Luma',flow:'Review updates',platform:'iOS',category:'Messaging',collection:'Luma',elements:['Lists','Navigation','Empty State'],tags:['notifications','updates'],imageUrl:demoSvg('Notifications','Updates from your team','#f4f6f8','#52a06c'),favorite:false,createdAt:'2026-08-01T08:00:00Z',demo:true}
+  ];
+
+  function dbOpen(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains(STORE))db.createObjectStore(STORE,{keyPath:'id'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+  async function dbAll(){const db=await dbOpen();return new Promise((resolve,reject)=>{const r=db.transaction(STORE,'readonly').objectStore(STORE).getAll();r.onsuccess=()=>resolve(r.result||[]);r.onerror=()=>reject(r.error)})}
+  async function dbPut(item){const db=await dbOpen();return new Promise((resolve,reject)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).put(item);r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error)})}
+  async function dbDelete(id){const db=await dbOpen();return new Promise((resolve,reject)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).delete(id);r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error)})}
+  async function dbClear(){const db=await dbOpen();return new Promise((resolve,reject)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).clear();r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error)})}
+  function hydrate(item){if(item.blob&&!item.imageUrl)item.imageUrl=URL.createObjectURL(item.blob);return item}
+  async function init(){try{S.items=(await dbAll()).map(hydrate)}catch(e){toast('浏览器存储初始化失败')}finally{S.loading=false;render()}}
+
+  function inferElements(text){const t=slug(text);return ELEMENTS.filter(e=>ELEM_KEYS[e].some(k=>t.includes(slug(k))))}
+  function inferCategory(text){const t=slug(text);for(const [cat,keys] of Object.entries(CATEGORY_KEYS)){if(keys.some(k=>t.includes(slug(k))))return cat}return 'Other'}
+  function inferPlatform(text,fallback='iOS'){const t=slug(text);if(t.includes('android'))return'Android';if(t.includes('web')||t.includes('desktop')||t.includes('site'))return'Web';if(t.includes('ios')||t.includes('iphone'))return'iOS';return fallback}
