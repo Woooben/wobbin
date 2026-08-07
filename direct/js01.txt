@@ -1,5 +1,0 @@
-(() => {
-"use strict";
-
-const DB_NAME="screenvault_v2", STORE="screens", DB_VERSION=1;
-const COVER_KEY="wobbin_covers_v1", THEME_KEY="wobbin_theme_v1";
