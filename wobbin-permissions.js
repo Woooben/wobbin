@@ -122,3 +122,11 @@ initWobbinPermissions();
   script.dataset.wobbinTags='1';
   document.body.append(script);
 })();
+
+(function loadWobbinUiElements(){
+  if(document.querySelector('script[data-wobbin-ui-elements]'))return;
+  const script=document.createElement('script');
+  script.src='./wobbin-ui-elements.js';
+  script.dataset.wobbinUiElements='1';
+  document.body.append(script);
+})();
