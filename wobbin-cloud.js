@@ -1,7 +1,6 @@
 'use strict';
 
 const WOBBIN_SUPABASE_URL='https://gzlenorybqyxstpwkqgf.supabase.co';
-const WOBBIN_SUPABASE_KEY='sb_publishable_KJ7Sjs2Ym3eVBGv8xd7swg__t-rGDqN';
 const WOBBIN_ADMIN_URL=WOBBIN_SUPABASE_URL+'/functions/v1/wobbin-admin';
 const WOBBIN_ADMIN_KEY_STORE='wobbin_admin_key_v1';
 const WOBBIN_CLOUD={online:false,loading:false,apps:new Map(),flows:new Map()};
@@ -12,10 +11,11 @@ all=function(){return [...S.items]};
 function cloudItemById(id){return S.items.find(x=>x.id===id&&x.cloud)}
 function localOnlyItems(){return S.items.filter(x=>!x.cloud&&!x.demo)}
 
-async function cloudGet(path){
-  const res=await fetch(WOBBIN_SUPABASE_URL+path,{headers:{apikey:WOBBIN_SUPABASE_KEY}});
-  if(!res.ok){let msg='云端读取失败';try{const j=await res.json();msg=j.message||j.error||msg}catch{}throw new Error(msg)}
-  return res.json();
+async function cloudLibrary(){
+  const res=await fetch(WOBBIN_ADMIN_URL+'?action=library',{cache:'no-store'});
+  let data={};try{data=await res.json()}catch{}
+  if(!res.ok)throw new Error(data.error||'云端读取失败');
+  return data;
 }
 
 async function askAdminKey(force=false){
@@ -44,9 +44,7 @@ async function adminFetch(payload,{form=false,retry=true}={}){
   return data;
 }
 
-async function validateAdmin(){
-  return adminFetch({action:'ping'});
-}
+async function validateAdmin(){return adminFetch({action:'ping'})}
 
 function cloudRowToItem(row,appMap,flowMap){
   const app=appMap.get(row.app_id);
@@ -66,6 +64,7 @@ function cloudRowToItem(row,appMap,flowMap){
     demo:false,
     cloud:true,
     storagePath:row.storage_path||'',
+    storageProvider:row.storage_provider||'supabase',
     sourcePath:row.source_path||'',
   };
 }
@@ -74,8 +73,8 @@ function syncCloudCovers(appRows,cloudItems){
   try{
     const c=covers();
     for(const app of appRows){
-      if(!app.cover_url)continue;
-      const hit=cloudItems.find(x=>x.app===app.name&&x.imageUrl===app.cover_url);
+      if(!app.cover_screen_id)continue;
+      const hit=cloudItems.find(x=>x.id===app.cover_screen_id);
       if(hit)c[app.name]=hit.id;
     }
     localStorage.setItem(COVER_KEY,JSON.stringify(c));
@@ -86,12 +85,8 @@ async function loadCloudLibrary({quiet=false}={}){
   if(WOBBIN_CLOUD.loading)return;
   WOBBIN_CLOUD.loading=true;
   try{
-    const [appRows,flowRows,screenRows,localRows]=await Promise.all([
-      cloudGet('/rest/v1/apps?select=id,name,cover_url,platform&order=created_at.desc'),
-      cloudGet('/rest/v1/flows?select=id,app_id,name&order=created_at.asc'),
-      cloudGet('/rest/v1/screens?select=id,app_id,flow_id,name,image_url,element_tags,platform,category,tags,storage_path,source_path,created_at&order=created_at.desc'),
-      dbAll().catch(()=>[]),
-    ]);
+    const [library,localRows]=await Promise.all([cloudLibrary(),dbAll().catch(()=>[])]);
+    const appRows=library.apps||[],flowRows=library.flows||[],screenRows=library.screens||[];
     const appMap=new Map(appRows.map(x=>[x.id,x]));
     const flowMap=new Map(flowRows.map(x=>[x.id,x]));
     WOBBIN_CLOUD.apps=appMap;
@@ -139,7 +134,7 @@ importEntries=async function(){
   btn.disabled=true;
   const d={app:document.getElementById('up-app').value.trim(),flow:document.getElementById('up-flow').value.trim(),platform:document.getElementById('up-platform').value,category:document.getElementById('up-category').value};
   try{
-    await validateAdmin();
+    const mode=await validateAdmin();
     const added=[];
     for(let i=0;i<S.entries.length;i++){
       btn.textContent=`上传云端 ${i+1}/${S.entries.length}`;
@@ -148,7 +143,7 @@ importEntries=async function(){
     S.items=[...added,...S.items];
     S.upload=false;S.entries=[];S.view='home';S.query='';
     await loadCloudLibrary({quiet:true});
-    toast(`已上传云端 ${added.length} 张截图`);
+    toast(`已上传 ${added.length} 张 · ${mode.storage==='aliyun-oss'?'阿里云 OSS':'云端'}`);
   }catch(e){
     btn.disabled=false;btn.textContent='开始导入';toast(e.message||'云端导入失败');
   }
@@ -159,7 +154,7 @@ async function migrateLocalItems(){
   if(!locals.length)return toast('没有需要同步的本机截图');
   if(!confirm(`将本机 ${locals.length} 张截图上传到云端。上传成功后会从本机旧资料库移除，继续吗？`))return;
   try{
-    await validateAdmin();
+    const mode=await validateAdmin();
     let done=0;
     for(const item of locals){
       const blob=item.blob;
@@ -173,7 +168,7 @@ async function migrateLocalItems(){
       done++;toast(`正在同步本机资料 ${done}/${locals.length}`);
     }
     await loadCloudLibrary({quiet:true});
-    toast(`本机资料已同步到云端 · ${done} 张`);
+    toast(`已同步 ${done} 张 · ${mode.storage==='aliyun-oss'?'阿里云 OSS':'云端'}`);
   }catch(e){toast(e.message||'本机资料同步失败')}
 }
 
@@ -210,7 +205,6 @@ deleteApp=async function(name){
   }catch(e){toast(e.message||'文件包删除失败')}
 };
 
-const __cloudLocalBindCover=bindCover;
 bindCover=function(){
   const close=()=>{S.coverPicker=null;render()};
   document.getElementById('cover-close').onclick=close;
@@ -254,3 +248,4 @@ render=function(){__cloudRender();queueMicrotask(decorateCloudUI)};
 window.addEventListener('online',()=>loadCloudLibrary({quiet:true}));
 window.addEventListener('load',()=>setTimeout(()=>loadCloudLibrary({quiet:true}),60));
 setTimeout(()=>loadCloudLibrary({quiet:true}),160);
+setInterval(()=>loadCloudLibrary({quiet:true}),45*60*1000);
