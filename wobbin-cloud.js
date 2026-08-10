@@ -10,6 +10,7 @@ all=function(){return [...S.items]};
 
 function cloudItemById(id){return S.items.find(x=>x.id===id&&x.cloud)}
 function localOnlyItems(){return S.items.filter(x=>!x.cloud&&!x.demo)}
+function legacyCloudItems(){return S.items.filter(x=>x.cloud&&x.storageProvider!=='oss')}
 
 async function cloudLibrary(){
   const res=await fetch(WOBBIN_ADMIN_URL+'?action=library',{cache:'no-store'});
@@ -172,6 +173,37 @@ async function migrateLocalItems(){
   }catch(e){toast(e.message||'本机资料同步失败')}
 }
 
+async function migrateExistingCloudToOss(){
+  const startCount=legacyCloudItems().length;
+  if(!startCount)return toast('现有云端截图已经全部在 OSS');
+  if(!confirm(`将现有 ${startCount} 张 Supabase Storage 截图迁移到阿里云 OSS。迁移成功后会删除 Supabase 中对应原图，继续吗？`))return;
+  try{
+    const mode=await validateAdmin();
+    if(mode.storage!=='aliyun-oss')throw new Error('OSS 尚未连接，请检查 Supabase Secrets');
+    let total=0,stalled=0;
+    while(true){
+      const out=await adminFetch({action:'migrate-storage-batch',limit:10});
+      total+=Number(out.migrated||0);
+      const remaining=Number(out.remaining||0);
+      toast(`迁移到 OSS · 已完成 ${total} 张 · 剩余 ${remaining} 张`);
+      if(!remaining)break;
+      if(!out.migrated){
+        stalled++;
+        if(stalled>=2){
+          const first=out.failed?.[0]?.error||'部分图片迁移失败';
+          throw new Error(first);
+        }
+      }else stalled=0;
+      await new Promise(r=>setTimeout(r,220));
+    }
+    await loadCloudLibrary({quiet:true});
+    toast(`迁移完成 · ${total} 张已转入阿里云 OSS`);
+  }catch(e){
+    await loadCloudLibrary({quiet:true}).catch(()=>{});
+    toast(e.message||'OSS 迁移失败');
+  }
+}
+
 const __cloudLocalDeleteScreen=deleteSingleScreen;
 deleteSingleScreen=async function(id,opts={}){
   const item=S.items.find(x=>x.id===id);
@@ -232,11 +264,18 @@ function decorateCloudUI(){
   if(status){status.className='cloud-status'+(WOBBIN_CLOUD.online?'':' offline');status.textContent=WOBBIN_CLOUD.online?'云端已连接':'云端离线'}
 
   document.querySelector('.cloud-local-note')?.remove();
-  const count=localOnlyItems().length;
-  if(count){
+  const legacyCount=legacyCloudItems().length;
+  const localCount=localOnlyItems().length;
+  if(legacyCount){
     const note=document.createElement('div');
     note.className='cloud-local-note';
-    note.innerHTML=`<span>检测到 <strong>${count}</strong> 张本机旧截图</span><button type="button" data-migrate-local>同步到云端</button>`;
+    note.innerHTML=`<span>有 <strong>${legacyCount}</strong> 张截图仍在 Supabase Storage</span><button type="button" data-migrate-oss>迁移到 OSS</button>`;
+    document.body.append(note);
+    note.querySelector('[data-migrate-oss]').onclick=migrateExistingCloudToOss;
+  }else if(localCount){
+    const note=document.createElement('div');
+    note.className='cloud-local-note';
+    note.innerHTML=`<span>检测到 <strong>${localCount}</strong> 张本机旧截图</span><button type="button" data-migrate-local>同步到云端</button>`;
     document.body.append(note);
     note.querySelector('[data-migrate-local]').onclick=migrateLocalItems;
   }
