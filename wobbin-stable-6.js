@@ -277,5 +277,10 @@ enhanceStable6();
 (function loadWobbinCloud(){
   if(document.querySelector('script[data-wobbin-cloud]'))return;
   const css=document.createElement('link');css.rel='stylesheet';css.href='./wobbin-cloud.css';css.dataset.wobbinCloud='1';document.head.append(css);
-  const script=document.createElement('script');script.src='./wobbin-cloud.js';script.dataset.wobbinCloud='1';document.body.append(script);
+  const script=document.createElement('script');script.src='./wobbin-cloud.js';script.dataset.wobbinCloud='1';
+  script.onload=()=>{
+    if(document.querySelector('script[data-wobbin-direct]'))return;
+    const direct=document.createElement('script');direct.src='./wobbin-direct-upload.js';direct.dataset.wobbinDirect='1';document.body.append(direct);
+  };
+  document.body.append(script);
 })();
