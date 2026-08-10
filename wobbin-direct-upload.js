@@ -182,3 +182,11 @@ importEntries=async function(){
     toast(e.message||'OSS 直传失败');
   }
 };
+
+(function loadWobbinPermissions(){
+  if(document.querySelector('script[data-wobbin-permissions]'))return;
+  const script=document.createElement('script');
+  script.src='./wobbin-permissions.js';
+  script.dataset.wobbinPermissions='1';
+  document.body.append(script);
+})();
