@@ -114,3 +114,11 @@ render=function(){
 
 queueMicrotask(applyWobbinPermissionUI);
 initWobbinPermissions();
+
+(function loadWobbinTags(){
+  if(document.querySelector('script[data-wobbin-tags]'))return;
+  const script=document.createElement('script');
+  script.src='./wobbin-tags.js';
+  script.dataset.wobbinTags='1';
+  document.body.append(script);
+})();
