@@ -27,13 +27,13 @@
   function sourceItems(){
     return all().filter(x=>!x.demo&&kindFor(x)===S.libraryMode&&(S.platform==='All'||x.platform===S.platform));
   }
-  function topTerms(getter,limit=4){
+  function topTerms(getter,limit=8){
     const counts=new Map();
     for(const item of sourceItems())for(const value of cleanValues(getter(item)))counts.set(value,(counts.get(value)||0)+1);
     return [...counts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'en')).slice(0,limit);
   }
-  function productTerms(){return topTerms(productTypes,4)}
-  function elementTerms(){return topTerms(x=>x.elements||[],4)}
+  function productTerms(){return topTerms(productTypes,8)}
+  function elementTerms(){return topTerms(x=>x.elements||[],8)}
 
   function group(title,kind,rows){
     const section=document.createElement('section');section.className='wobbin-shortcut-group';
