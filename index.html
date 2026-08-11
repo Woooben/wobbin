@@ -9,10 +9,93 @@
 <link rel="stylesheet" href="./wobbin-stable.css">
 <link rel="stylesheet" href="./wobbin-stable-5.css">
 <link rel="stylesheet" href="./wobbin-stable-6.css">
+<style id="wobbin-boot-style">
+  body.wobbin-booting{overflow:hidden}
+  body.wobbin-booting #app{visibility:hidden;opacity:0}
+  #app{transition:opacity .18s ease}
+  .wobbin-boot-skeleton{display:none;min-height:100vh;background:#111;color:#fff}
+  body.wobbin-booting .wobbin-boot-skeleton{display:block}
+  .wobbin-boot-inner{width:min(calc(100% - 48px),1480px);margin:0 auto}
+  .wobbin-boot-top{min-height:76px;display:grid;grid-template-columns:minmax(250px,1fr) minmax(420px,620px) minmax(250px,1fr);align-items:center;gap:28px;padding:14px 0 10px}
+  .wobbin-boot-left,.wobbin-boot-actions{display:flex;align-items:center;gap:12px}
+  .wobbin-boot-actions{justify-content:flex-end}
+  .wobbin-boot-logo{width:40px;height:40px;border-radius:10px}
+  .wobbin-boot-pills{width:188px;height:35px;border-radius:18px}
+  .wobbin-boot-search{height:46px;border-radius:24px;width:100%}
+  .wobbin-boot-action{width:40px;height:40px;border-radius:10px}
+  .wobbin-boot-import{width:58px;height:40px;border-radius:10px}
+  .wobbin-boot-main{padding:26px 0 72px}
+  .wobbin-boot-label{width:150px;height:18px;border-radius:6px;margin:7px 0 26px}
+  .wobbin-boot-shortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:54px;padding:24px 0 30px;border-bottom:1px solid #292929}
+  .wobbin-boot-group{display:grid;gap:10px}
+  .wobbin-boot-group-title{width:72px;height:12px;border-radius:4px;margin-bottom:3px}
+  .wobbin-boot-link{height:18px;border-radius:5px}
+  .wobbin-boot-link:nth-child(2){width:72%}.wobbin-boot-link:nth-child(3){width:58%}.wobbin-boot-link:nth-child(4){width:78%}.wobbin-boot-link:nth-child(5){width:64%}
+  .wobbin-boot-filter{width:190px;height:44px;border-radius:24px;margin:28px 0 20px}
+  .wobbin-boot-heading{display:flex;align-items:flex-end;justify-content:space-between;margin:4px 0 18px}
+  .wobbin-boot-heading-left{display:grid;gap:8px}.wobbin-boot-title{width:74px;height:25px;border-radius:6px}.wobbin-boot-subtitle{width:250px;height:12px;border-radius:4px}.wobbin-boot-count{width:48px;height:12px;border-radius:4px}
+  .wobbin-boot-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+  .wobbin-boot-card{display:grid;gap:10px}.wobbin-boot-cover{aspect-ratio:1.05/1;border-radius:22px}.wobbin-boot-meta{display:flex;align-items:center;gap:9px}.wobbin-boot-app-icon{width:32px;height:32px;border-radius:8px}.wobbin-boot-meta-copy{display:grid;gap:6px}.wobbin-boot-meta-title{width:74px;height:11px;border-radius:4px}.wobbin-boot-meta-sub{width:112px;height:9px;border-radius:4px}
+  .wobbin-skeleton-block{position:relative;overflow:hidden;background:#232323}
+  .wobbin-skeleton-block::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.055),transparent);animation:wobbinSkeleton 1.35s ease-in-out infinite}
+  @keyframes wobbinSkeleton{100%{transform:translateX(100%)}}
+  @media(max-width:1100px){.wobbin-boot-inner{width:min(calc(100% - 36px),1480px)}.wobbin-boot-top{grid-template-columns:1fr minmax(320px,520px) auto;gap:18px}.wobbin-boot-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 48px}.wobbin-boot-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:760px){.wobbin-boot-inner{width:calc(100% - 28px)}.wobbin-boot-top{grid-template-columns:1fr auto;gap:12px}.wobbin-boot-search{grid-column:1/-1;grid-row:2}.wobbin-boot-shortcuts{grid-template-columns:1fr 1fr;gap:26px 22px}.wobbin-boot-cards{grid-template-columns:1fr}.wobbin-boot-card:nth-child(n+2){display:none}}
+  @media(prefers-reduced-motion:reduce){.wobbin-skeleton-block::after{animation:none}}
+</style>
 </head>
-<body>
+<body class="wobbin-booting">
+<div class="wobbin-boot-skeleton" aria-hidden="true">
+  <div class="wobbin-boot-inner">
+    <div class="wobbin-boot-top">
+      <div class="wobbin-boot-left"><div class="wobbin-boot-logo wobbin-skeleton-block"></div><div class="wobbin-boot-pills wobbin-skeleton-block"></div></div>
+      <div class="wobbin-boot-search wobbin-skeleton-block"></div>
+      <div class="wobbin-boot-actions"><div class="wobbin-boot-action wobbin-skeleton-block"></div><div class="wobbin-boot-import wobbin-skeleton-block"></div></div>
+    </div>
+    <main class="wobbin-boot-main">
+      <div class="wobbin-boot-label wobbin-skeleton-block"></div>
+      <section class="wobbin-boot-shortcuts">
+        <div class="wobbin-boot-group"><div class="wobbin-boot-group-title wobbin-skeleton-block"></div><div class="wobbin-boot-link wobbin-skeleton-block"></div><div class="wobbin-boot-link wobbin-skeleton-block"></div><div class="wobbin-boot-link wobbin-skeleton-block"></div><div class="wobbin-boot-link wobbin-skeleton-block"></div></div>
+        <div class="wobbin-boot-group"><div class="wobbin-boot-group-title wobbin-skeleton-block"></div><div class="wobbin-boot-link wobbin-skeleton-block"></div><div class="wobbin-boot-link wobbin-skeleton-block"></div><div class="wobbin-boot-link wobbin-skeleton-block"></div><div class="wobbin-boot-link wobbin-skeleton-block"></div></div>
+        <div class="wobbin-boot-group"><div class="wobbin-boot-group-title wobbin-skeleton-block"></div><div class="wobbin-boot-link wobbin-skeleton-block"></div><div class="wobbin-boot-link wobbin-skeleton-block"></div><div class="wobbin-boot-link wobbin-skeleton-block"></div><div class="wobbin-boot-link wobbin-skeleton-block"></div></div>
+        <div class="wobbin-boot-group"><div class="wobbin-boot-group-title wobbin-skeleton-block"></div><div class="wobbin-boot-link wobbin-skeleton-block"></div><div class="wobbin-boot-link wobbin-skeleton-block"></div><div class="wobbin-boot-link wobbin-skeleton-block"></div><div class="wobbin-boot-link wobbin-skeleton-block"></div></div>
+      </section>
+      <div class="wobbin-boot-filter wobbin-skeleton-block"></div>
+      <div class="wobbin-boot-heading"><div class="wobbin-boot-heading-left"><div class="wobbin-boot-title wobbin-skeleton-block"></div><div class="wobbin-boot-subtitle wobbin-skeleton-block"></div></div><div class="wobbin-boot-count wobbin-skeleton-block"></div></div>
+      <section class="wobbin-boot-cards">
+        <div class="wobbin-boot-card"><div class="wobbin-boot-cover wobbin-skeleton-block"></div><div class="wobbin-boot-meta"><div class="wobbin-boot-app-icon wobbin-skeleton-block"></div><div class="wobbin-boot-meta-copy"><div class="wobbin-boot-meta-title wobbin-skeleton-block"></div><div class="wobbin-boot-meta-sub wobbin-skeleton-block"></div></div></div></div>
+        <div class="wobbin-boot-card"><div class="wobbin-boot-cover wobbin-skeleton-block"></div><div class="wobbin-boot-meta"><div class="wobbin-boot-app-icon wobbin-skeleton-block"></div><div class="wobbin-boot-meta-copy"><div class="wobbin-boot-meta-title wobbin-skeleton-block"></div><div class="wobbin-boot-meta-sub wobbin-skeleton-block"></div></div></div></div>
+        <div class="wobbin-boot-card"><div class="wobbin-boot-cover wobbin-skeleton-block"></div><div class="wobbin-boot-meta"><div class="wobbin-boot-app-icon wobbin-skeleton-block"></div><div class="wobbin-boot-meta-copy"><div class="wobbin-boot-meta-title wobbin-skeleton-block"></div><div class="wobbin-boot-meta-sub wobbin-skeleton-block"></div></div></div></div>
+      </section>
+    </main>
+  </div>
+</div>
 <div id="app"></div>
 <div id="toast" class="toast"></div>
+<script>
+(function(){
+  let finished=false;
+  const started=Date.now();
+  function finishBoot(){
+    if(finished)return;
+    finished=true;
+    clearInterval(timer);
+    document.body.classList.remove('wobbin-booting');
+    document.querySelector('.wobbin-boot-skeleton')?.remove();
+  }
+  const timer=setInterval(()=>{
+    const status=document.querySelector('[data-cloud-status]');
+    if(status&&!status.classList.contains('offline')&&status.textContent.includes('已连接')){
+      setTimeout(finishBoot,80);
+      return;
+    }
+    if(Date.now()-started>7000)finishBoot();
+  },30);
+  window.addEventListener('pageshow',()=>{
+    if(document.querySelector('[data-cloud-status]:not(.offline)'))setTimeout(finishBoot,60);
+  });
+})();
+</script>
 <script src="./wobbin-stable-1.js"></script>
 <script src="./wobbin-stable-2.js"></script>
 <script src="./wobbin-stable-3.js"></script>
