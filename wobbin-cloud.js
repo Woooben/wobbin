@@ -129,11 +129,31 @@ async function cloudUploadEntry(entry,d){
   return out.item;
 }
 
+function selectedCloudUploadLogo(){
+  const input=document.getElementById('up-app-logo');
+  const file=input?.files?.[0];
+  if(!file)return null;
+  if(!['image/png','image/jpeg','image/webp'].includes(file.type))throw new Error('App 产品 Logo 仅支持 PNG、JPG、WebP');
+  if(file.size>5*1024*1024)throw new Error('App 产品 Logo 不能超过 5MB');
+  return file;
+}
+
+async function uploadCloudPackageLogo(appName,file){
+  if(!file)return false;
+  if(typeof window.wobbinUploadAppLogo!=='function')throw new Error('Logo 上传模块尚未加载，请刷新页面后重试');
+  const library=await cloudLibrary();
+  const app=[...(library.apps||[])].find(x=>x.name===appName);
+  if(!app?.id)throw new Error(`未找到「${appName}」文件包，Logo 暂未设置`);
+  await window.wobbinUploadAppLogo(app.id,file);
+  return true;
+}
+
 importEntries=async function(){
   if(!S.entries.length)return toast('请先选择文件');
   const btn=document.getElementById('upload-submit');
   btn.disabled=true;
   const d={app:document.getElementById('up-app').value.trim(),flow:document.getElementById('up-flow').value.trim(),platform:document.getElementById('up-platform').value,category:document.getElementById('up-category').value};
+  const logoFile=selectedCloudUploadLogo();
   try{
     const mode=await validateAdmin();
     const added=[];
@@ -141,10 +161,14 @@ importEntries=async function(){
       btn.textContent=`上传云端 ${i+1}/${S.entries.length}`;
       added.push(await cloudUploadEntry(S.entries[i],d));
     }
+    if(logoFile){
+      btn.textContent='正在设置产品 Logo…';
+      await uploadCloudPackageLogo(d.app||'Imported App',logoFile);
+    }
     S.items=[...added,...S.items];
     S.upload=false;S.entries=[];S.view='home';S.query='';
     await loadCloudLibrary({quiet:true});
-    toast(`已上传 ${added.length} 张 · ${mode.storage==='aliyun-oss'?'阿里云 OSS':'云端'}`);
+    toast(logoFile?`已上传 ${added.length} 张 · ${d.app||'Imported App'} · Logo 已设置`:`已上传 ${added.length} 张 · ${mode.storage==='aliyun-oss'?'阿里云 OSS':'云端'}`);
   }catch(e){
     btn.disabled=false;btn.textContent='开始导入';toast(e.message||'云端导入失败');
   }
