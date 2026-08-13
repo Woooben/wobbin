@@ -131,7 +131,23 @@ async function directUploadChunk(chunk,d,globalOffset,progressState){
     const first=failed[0].error;
     throw new Error(`${failed.length} 张直传失败：${first?.message||'请检查 OSS CORS 或网络'}`);
   }
-  return finalized;
+  return {items:finalized,app_id:prepared.app_id,app_name:prepared.app_name};
+}
+
+function selectedUploadLogo(){
+  const input=document.getElementById('up-app-logo');
+  const file=input?.files?.[0];
+  if(!file)return null;
+  if(!['image/png','image/jpeg','image/webp'].includes(file.type))throw new Error('App 产品 Logo 仅支持 PNG、JPG、WebP');
+  if(file.size>5*1024*1024)throw new Error('App 产品 Logo 不能超过 5MB');
+  return file;
+}
+
+async function uploadPackageLogo(appId,file){
+  if(!file||!appId)return false;
+  if(typeof window.wobbinUploadAppLogo!=='function')throw new Error('Logo 上传模块尚未加载，请刷新页面后重试');
+  await window.wobbinUploadAppLogo(appId,file);
+  return true;
 }
 
 importEntries=async function(){
@@ -146,6 +162,7 @@ importEntries=async function(){
     platform:document.getElementById('up-platform').value,
     category:document.getElementById('up-category').value,
   };
+  const logoFile=selectedUploadLogo();
   const entries=[...S.entries];
   const progressState={
     total:entries.length,
@@ -161,19 +178,25 @@ importEntries=async function(){
       return __wobbinCloudRelayImportEntries();
     }
     const added=[];
+    let appId='',appName=d.app||'Imported App';
     showDirectProgress(0,entries.length,0,progressState.totalBytes);
     for(let start=0;start<entries.length;start+=WOBBIN_DIRECT_BATCH_SIZE){
       const chunk=entries.slice(start,start+WOBBIN_DIRECT_BATCH_SIZE);
       btn.textContent=`直传 OSS ${Math.min(start+1,entries.length)}/${entries.length}`;
-      const items=await directUploadChunk(chunk,d,start,progressState);
-      added.push(...items);
+      const result=await directUploadChunk(chunk,d,start,progressState);
+      added.push(...result.items);
+      if(!appId){appId=result.app_id||'';appName=result.app_name||appName}
       btn.textContent=`直传 OSS ${progressState.done}/${entries.length}`;
+    }
+    if(logoFile){
+      btn.textContent='正在设置产品 Logo…';
+      await uploadPackageLogo(appId,logoFile);
     }
     S.items=[...added,...S.items];
     S.upload=false;S.entries=[];S.view='home';S.query='';
     await loadCloudLibrary({quiet:true});
     hideDirectProgress();
-    toast(`已直传 ${added.length} 张 · 阿里云 OSS`);
+    toast(logoFile?`已直传 ${added.length} 张 · ${appName} · Logo 已设置`:`已直传 ${added.length} 张 · 阿里云 OSS`);
   }catch(e){
     hideDirectProgress();
     btn.disabled=false;
