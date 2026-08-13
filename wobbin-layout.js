@@ -106,4 +106,11 @@
   if(!document.querySelector('script[data-wobbin-package-meta]')){
     const script=document.createElement('script');script.src='./wobbin-package-meta.js';script.dataset.wobbinPackageMeta='1';document.body.append(script);
   }
+  setTimeout(()=>{
+    if(document.querySelector('script[data-wobbin-routing]'))return;
+    const script=document.createElement('script');
+    script.src='./wobbin-routing.js';
+    script.dataset.wobbinRouting='1';
+    document.body.append(script);
+  },0);
 })();
