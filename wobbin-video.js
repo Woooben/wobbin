@@ -53,6 +53,41 @@ function wobbinMountVideo(container,item){
   requestAnimationFrame(()=>video.play().catch(()=>{}));return true;
 }
 
+async function wobbinPersistMediaCover(screenId){
+  const endpoint=WOBBIN_SUPABASE_URL+'/functions/v1/wobbin-app-meta';
+  async function send(key){
+    return fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','x-wobbin-key':key},body:JSON.stringify({action:'set-cover',screen_id:screenId})});
+  }
+  let key=await askAdminKey(false),res=await send(key);
+  if(res.status===401){
+    try{localStorage.removeItem(WOBBIN_ADMIN_KEY_STORE)}catch{}
+    key=await askAdminKey(true);res=await send(key);
+  }
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok)throw new Error(data.error||`封面更新失败（${res.status}）`);
+  try{localStorage.setItem(WOBBIN_ADMIN_KEY_STORE,key)}catch{}
+  return data;
+}
+
+function wobbinBindMediaCoverPicker(){
+  const close=()=>{S.coverPicker=null;render()};
+  const closeBtn=document.getElementById('cover-close'),bg=document.getElementById('cover-bg');
+  if(closeBtn)closeBtn.onclick=close;
+  if(bg)bg.onmousedown=e=>{if(e.target.id==='cover-bg')close()};
+  document.querySelectorAll('[data-cover-id]').forEach(button=>button.onclick=async()=>{
+    const app=S.coverPicker,id=button.dataset.coverId,item=S.items.find(x=>x.id===id);
+    try{
+      if(item?.cloud)await wobbinPersistMediaCover(id);
+      setCover(app,id);
+      S.coverPicker=null;
+      render();
+      toast(`${app} 封面已更新${wobbinIsVideoItem(item)?' · 视频封面':''}`);
+    }catch(error){toast(error instanceof Error?error.message:'封面更新失败')}
+  });
+}
+
+if(typeof bindCover==='function')bindCover=wobbinBindMediaCoverPicker;
+
 function wobbinHydrateVideos(){
   if(typeof all!=='function')return;
   wobbinEnsureVideoStyles();
