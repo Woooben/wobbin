@@ -8,6 +8,8 @@ function wobbinIsVideoItem(item){
   if(!item)return false;
   const type=String(item.mediaType||item.fileType||item.mimeType||'').toLowerCase();
   if(type.includes('video'))return true;
+  const path=String(item.storagePath||'').toLowerCase();
+  if(/\.(mp4|webm|mov|m4v|ogg|ogv)$/i.test(path))return true;
   const url=String(item.imageUrl||item.url||item.src||'').split('?')[0].toLowerCase();
   return /\.(mp4|webm|mov|m4v|ogg|ogv)$/i.test(url);
 }
@@ -24,8 +26,11 @@ function wobbinEnsureVideoStyles(){
     .screen-frame .wobbin-video-media{width:auto;max-width:100%;height:390px;object-fit:contain;border-radius:16px;box-shadow:0 14px 30px rgba(0,0,0,.25);background:transparent}
     .screen-frame.web .wobbin-video-media{width:100%;height:auto;max-height:390px;object-fit:contain;border-radius:9px}
     .preview-body .wobbin-video-media{width:100%;height:100%;object-fit:contain;max-height:calc(100vh - 150px);margin:auto;background:transparent}
+    .cover-option .wobbin-video-media{width:100%;height:100%;object-fit:contain;background:transparent}
+    .cover-image .wobbin-video-media{width:auto;height:100%;max-width:100%;object-fit:contain;border-radius:18px;box-shadow:0 16px 36px rgba(0,0,0,.28);background:#111}
     .wobbin-video-badge{position:absolute;right:10px;bottom:10px;z-index:3;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.58);color:#fff;font-size:11px;line-height:1;pointer-events:none;backdrop-filter:blur(8px)}
     .wobbin-video-badge::before{content:'▶';transform:translateX(1px)}
+    .cover-option .wobbin-video-badge{right:7px;bottom:7px;width:22px;height:22px;font-size:9px}
     .wobbin-video-media::-webkit-media-controls{display:none!important}
     @media(max-width:560px){.screen-frame .wobbin-video-media{height:270px}.screen-frame.web .wobbin-video-media{height:auto;max-height:270px}}
   `;
@@ -54,6 +59,11 @@ function wobbinHydrateVideos(){
   const items=all(),byId=new Map(items.map(x=>[String(x.id),x]));
 
   document.querySelectorAll('[data-screen]').forEach(frame=>{const item=byId.get(String(frame.dataset.screen));if(item)wobbinMountVideo(frame,item)});
+
+  document.querySelectorAll('.cover-option[data-cover-id]').forEach(option=>{
+    const item=byId.get(String(option.dataset.coverId));
+    if(item&&wobbinIsVideoItem(item))wobbinMountVideo(option,item);
+  });
 
   document.querySelectorAll('.cover-wrap[data-open-app]').forEach(wrap=>{
     const name=wrap.dataset.openApp;if(!name)return;
