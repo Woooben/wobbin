@@ -98,11 +98,4 @@
   }else{
     history.replaceState(history.state||{},'',homeUrl());
   }
-
-  if(!document.querySelector('script[data-wobbin-mobbin-detail]')){
-    const script=document.createElement('script');
-    script.src='./wobbin-detail-mobbin.js';
-    script.dataset.wobbinMobbinDetail='1';
-    document.body.append(script);
-  }
 })();
