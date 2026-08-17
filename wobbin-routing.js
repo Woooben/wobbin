@@ -61,6 +61,19 @@
       goHomeRoute(false);
     }
   }
+  function ensureVerticalDetailIdentity(){
+    if(document.getElementById('wobbin-detail-vertical-identity'))return;
+    const style=document.createElement('style');
+    style.id='wobbin-detail-vertical-identity';
+    style.textContent=`
+      .wobbin-mobbin-detail .app-title{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:18px!important;min-width:0!important}
+      .wobbin-mobbin-detail .mobbin-title-copy{width:min(760px,100%)!important;max-width:100%!important}
+      .wobbin-mobbin-detail .app-title h1{margin:0!important}
+      .wobbin-mobbin-detail .mobbin-product-meta{margin-left:0!important;margin-top:28px!important}
+      @media(max-width:900px){.wobbin-mobbin-detail .app-title{gap:14px!important}.wobbin-mobbin-detail .mobbin-product-meta{margin-left:0!important}}
+    `;
+    document.head.append(style);
+  }
 
   document.addEventListener('click',e=>{
     const target=e.target.closest?.('[data-open-app]');
@@ -106,6 +119,7 @@
     script.onload=()=>{
       const mobbinDetail=detail;
       if(typeof mobbinDetail!=='function')return;
+      ensureVerticalDetailIdentity();
       detail=function(){
         const html=mobbinDetail();
         return html.includes('class="topbar"')?html:`${header()}${html}`;
