@@ -103,6 +103,15 @@
     const script=document.createElement('script');
     script.src='./wobbin-detail-mobbin.js';
     script.dataset.wobbinMobbinDetail='1';
+    script.onload=()=>{
+      const mobbinDetail=detail;
+      if(typeof mobbinDetail!=='function')return;
+      detail=function(){
+        const html=mobbinDetail();
+        return html.includes('class="topbar"')?html:`${header()}${html}`;
+      };
+      render();
+    };
     document.body.append(script);
   }
 })();
