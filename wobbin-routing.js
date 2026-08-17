@@ -70,7 +70,8 @@
       .wobbin-mobbin-detail .mobbin-title-copy{width:min(760px,100%)!important;max-width:100%!important}
       .wobbin-mobbin-detail .app-title h1{margin:0!important}
       .wobbin-mobbin-detail .mobbin-product-meta{margin-left:0!important;margin-top:28px!important}
-      @media(max-width:900px){.wobbin-mobbin-detail .app-title{gap:14px!important}.wobbin-mobbin-detail .mobbin-product-meta{margin-left:0!important}}
+      .wobbin-mobbin-detail .mobbin-detail-hero{min-height:auto!important;padding-bottom:24px!important}
+      @media(max-width:900px){.wobbin-mobbin-detail .app-title{gap:14px!important}.wobbin-mobbin-detail .mobbin-product-meta{margin-left:0!important}.wobbin-mobbin-detail .mobbin-detail-hero{min-height:auto!important;padding-bottom:22px!important}}
     `;
     document.head.append(style);
   }
