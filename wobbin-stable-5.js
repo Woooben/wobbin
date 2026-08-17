@@ -137,14 +137,15 @@ function decorateDetailDeleteApp(){
   const head=document.querySelector('.app-head');
   if(!head||head.querySelector('[data-delete-current-app]'))return;
   const cover=head.querySelector('#set-cover-current');
-  const group=document.createElement('div');
-  group.className='app-head-actions';
+  let group=head.querySelector('.app-head-actions');
+  if(!group){group=document.createElement('div');group.className='app-head-actions';head.append(group)}
   const del=document.createElement('button');
   del.type='button';
   del.className='danger-outline';
   del.dataset.deleteCurrentApp=S.app;
   del.textContent='删除文件包';
-  if(cover){cover.before(group);group.append(cover);group.append(del)}else{group.append(del);head.append(group)}
+  if(cover&&cover.parentElement!==group)group.append(cover);
+  group.append(del);
 }
 function bindStable5Actions(){
   document.querySelectorAll('[data-delete-screen]').forEach(btn=>{
