@@ -27,13 +27,21 @@
   function sourceItems(){
     return all().filter(x=>!x.demo&&kindFor(x)===S.libraryMode&&(S.platform==='All'||x.platform===S.platform));
   }
-  function topTerms(getter,limit=8){
+  function rankedTerms(getter){
     const counts=new Map();
     for(const item of sourceItems())for(const value of cleanValues(getter(item)))counts.set(value,(counts.get(value)||0)+1);
-    return [...counts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'en')).slice(0,limit);
+    return [...counts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'en'));
   }
-  function productTerms(){return topTerms(productTypes,8)}
-  function elementTerms(){return topTerms(x=>x.elements||[],8)}
+  function visibleTerms(getter,selected,limit=8){
+    const rows=rankedTerms(getter),top=rows.slice(0,limit);
+    if(!selected||selected==='All'||top.some(([name])=>name===selected))return top;
+    const active=rows.find(([name])=>name===selected);
+    if(!active)return top;
+    if(top.length<limit)return [...top,active];
+    return [...top.slice(0,limit-1),active];
+  }
+  function productTerms(){return visibleTerms(productTypes,S.productType,8)}
+  function elementTerms(){return visibleTerms(x=>x.elements||[],S.element,8)}
 
   function group(title,kind,rows){
     const section=document.createElement('section');section.className='wobbin-shortcut-group';
@@ -52,6 +60,18 @@
     nav.append(group('Product Types','product',productTerms()),group('UI Elements','element',elementTerms()));
     return nav;
   }
+  function hasActiveFilters(){return S.productType!=='All'||S.element!=='All'||Boolean(String(S.query||'').trim())}
+  function activeFilterBar(){
+    if(!hasActiveFilters())return null;
+    const bar=document.createElement('div');bar.className='wobbin-active-filters';bar.dataset.wobbinActiveFilters='1';
+    const label=document.createElement('span');label.className='wobbin-active-filters-label';label.textContent='当前筛选';bar.append(label);
+    if(S.productType!=='All'){const chip=document.createElement('span');chip.className='wobbin-active-filter-chip';chip.textContent=`Product · ${S.productType}`;bar.append(chip)}
+    if(S.element!=='All'){const chip=document.createElement('span');chip.className='wobbin-active-filter-chip';chip.textContent=`UI · ${S.element}`;bar.append(chip)}
+    if(String(S.query||'').trim()){const chip=document.createElement('span');chip.className='wobbin-active-filter-chip';chip.textContent=`Search · ${S.query}`;bar.append(chip)}
+    const clear=document.createElement('button');clear.type='button';clear.dataset.clearWobbinFilters='1';clear.textContent='清除筛选';bar.append(clear);
+    return bar;
+  }
+  function clearAllFilters(){S.productType='All';S.element='All';S.query='';render();window.scrollTo({top:0,behavior:'smooth'})}
   function applyShortcut(kind,value){
     if(kind==='product')S.productType=S.productType===value?'All':value;
     if(kind==='element')S.element=S.element===value?'All':value;
@@ -76,10 +96,11 @@
   }
   function transformMain(){
     const main=document.querySelector('.main');if(!main)return;
-    main.querySelectorAll('[data-wobbin-shortcut-nav],.wobbin-shortcut-nav').forEach(el=>el.remove());
+    main.querySelectorAll('[data-wobbin-shortcut-nav],.wobbin-shortcut-nav,[data-wobbin-active-filters]').forEach(el=>el.remove());
     if(S.view!=='home')return;
     const nav=shortcutNav(),subnav=main.querySelector('.subnav');if(subnav)subnav.after(nav);else main.prepend(nav);
     nav.querySelectorAll('[data-shortcut-kind]').forEach(btn=>btn.addEventListener('click',()=>applyShortcut(btn.dataset.shortcutKind,btn.dataset.shortcutValue)));
+    const active=activeFilterBar();if(active){nav.after(active);active.querySelector('[data-clear-wobbin-filters]')?.addEventListener('click',clearAllFilters)}
   }
   function ensureStyles(){
     if(document.getElementById('wobbin-layout-style'))return;
@@ -92,6 +113,7 @@
       .wobbin-shortcut-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:76px;margin:8px 0 32px;padding:24px 0 30px;border-bottom:1px solid var(--line,#2c2c2c)}
       .wobbin-shortcut-group{min-width:0}.wobbin-shortcut-group h4{margin:0 0 14px;color:var(--muted,#8f8f8f);font-size:12px;font-weight:600;line-height:1.2}.wobbin-shortcut-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 34px}
       .wobbin-shortcut-link{width:100%;padding:0;border:0;background:none;color:var(--text,#f5f5f5);display:flex;align-items:center;gap:10px;text-align:left;cursor:pointer;font-size:16px;line-height:1.2;font-weight:700;letter-spacing:-.015em;min-width:0}.wobbin-shortcut-link:hover{opacity:.72}.wobbin-shortcut-link.active{color:#fff}.wobbin-shortcut-link.active span{text-decoration:underline;text-underline-offset:4px}.wobbin-shortcut-link span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wobbin-shortcut-link em{margin-left:auto;color:var(--muted,#8f8f8f);font-size:10px;font-style:normal;font-weight:600}.wobbin-shortcut-empty{color:var(--muted,#8f8f8f);font-size:13px}
+      .wobbin-active-filters{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:-16px 0 26px}.wobbin-active-filters-label{font-size:11px;color:var(--muted,#8f8f8f);margin-right:2px}.wobbin-active-filter-chip{height:28px;padding:0 9px;border:1px solid var(--line,#343434);border-radius:999px;background:var(--panel2,#222);display:inline-flex;align-items:center;color:var(--text,#fff);font-size:10px;font-weight:650}.wobbin-active-filters button{height:28px;padding:0 9px;border:0;background:none;color:var(--muted,#8f8f8f);font-size:10px;font-weight:650;cursor:pointer}.wobbin-active-filters button:hover{color:var(--text,#fff)}
       @media(max-width:1100px){.topbar{width:min(calc(100% - 36px),1480px)!important;grid-template-columns:1fr minmax(320px,520px) auto!important;gap:18px!important}.main{width:min(calc(100% - 36px),1480px)!important}.wobbin-shortcut-nav{gap:40px}.wobbin-shortcut-links{gap:8px 22px}}
       @media(max-width:760px){.topbar{grid-template-columns:1fr auto!important;gap:12px!important;padding-top:12px!important}.topbar .searchbar{grid-column:1/-1;grid-row:2;max-width:none}.topbar .actions{grid-column:2;grid-row:1}.topbar .brand{grid-column:1;grid-row:1}.main{width:min(calc(100% - 28px),1480px)!important}.wobbin-shortcut-nav{grid-template-columns:1fr;gap:26px;margin-top:4px}.wobbin-shortcut-links{grid-template-columns:repeat(2,minmax(0,1fr))}.wobbin-shortcut-link{font-size:15px}}
       @media(max-width:520px){.wobbin-library-tabs{max-width:230px;overflow:auto;scrollbar-width:none}.wobbin-shortcut-links{grid-template-columns:1fr}}
