@@ -18,7 +18,15 @@
     return data;
   };
 
-  loadCloudLibrary({quiet:true}).catch(error=>{
-    console.error('Wobbin full library reload failed',error);
-  });
+  function reloadFullLibraryWhenIdle(){
+    if(typeof WOBBIN_CLOUD!=='undefined'&&WOBBIN_CLOUD.loading){
+      setTimeout(reloadFullLibraryWhenIdle,120);
+      return;
+    }
+    loadCloudLibrary({quiet:true}).catch(error=>{
+      console.error('Wobbin full library reload failed',error);
+    });
+  }
+
+  reloadFullLibraryWhenIdle();
 })();
