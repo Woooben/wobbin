@@ -20,6 +20,13 @@
   function cleanType(value){return String(value||'').trim().replace(/\s+/g,' ').slice(0,40)}
   function sameType(a,b){return cleanType(a).toLocaleLowerCase()===cleanType(b).toLocaleLowerCase()}
   function builtinType(value){return BUILTIN.find(x=>sameType(x,value))||''}
+  function parseTypes(value){
+    const out=[];
+    for(const raw of String(value||'').split(/[、,，;；\n]+/)){
+      const type=cleanType(raw);if(!type||out.some(x=>sameType(x,type)))continue;out.push(type);
+    }
+    return out;
+  }
   function readCustomTypes(){
     try{
       const raw=JSON.parse(localStorage.getItem(CUSTOM_KEY)||'[]');
@@ -47,12 +54,12 @@
     return builtinType(type)||customTypes().find(x=>sameType(x,type))||type;
   }
   function customTypeButtons(selected){
-    return customTypes().map(type=>`<button type="button" data-upload-product-type="${attr(type)}" data-custom-product-type="1" class="${selected.has(type)?'active':''}">${esc(type)}</button>`).join('');
+    return customTypes().map(type=>`<button type="button" data-upload-product-type="${attr(type)}" data-custom-product-type="1" class="${[...selected].some(x=>sameType(x,type))?'active':''}">${esc(type)}</button>`).join('');
   }
   function addControl(scope){
     const id=scope==='editor'?'edit-custom-product-type':'upload-custom-product-type';
     const button=scope==='editor'?'data-add-edit-product-type':'data-add-upload-product-type';
-    return `<div class="wobbin-custom-type-add" data-custom-type-add="${scope}"><input id="${id}" type="text" maxlength="40" placeholder="输入自定义类型，如 Real Estate"><button type="button" class="secondary" ${button}>添加</button></div><small class="wobbin-custom-type-help">支持自定义产品类型，添加后可继续复用。</small>`;
+    return `<div class="wobbin-custom-type-add" data-custom-type-add="${scope}"><input id="${id}" type="text" maxlength="240" placeholder="输入多个类型，用、分隔，如 房产、AI、工具"><button type="button" class="secondary" ${button}>添加</button></div><small class="wobbin-custom-type-help">支持自定义产品类型；可一次输入多个，用「、」分隔，添加后可继续复用。</small>`;
   }
 
   function injectUploadCustomTypes(html){
@@ -68,22 +75,24 @@
   const baseUploadModal=uploadModal;
   uploadModal=function(){return injectUploadCustomTypes(baseUploadModal())};
 
-  function addUploadType(){
+  function addUploadTypes(){
     const input=document.getElementById('upload-custom-product-type');if(!input)return;
-    const raw=cleanType(input.value);if(!raw)return toast('请输入产品类型');
-    const type=registerCustomType(raw)||canonicalType(raw);if(!type)return;
+    const raws=parseTypes(input.value);if(!raws.length)return toast('请输入产品类型');
     if(!(S.uploadProductTypes instanceof Set))S.uploadProductTypes=new Set();
-    const existing=[...S.uploadProductTypes].find(x=>sameType(x,type));
-    if(existing)S.uploadProductTypes.add(existing);else S.uploadProductTypes.add(type);
+    for(const raw of raws){
+      const type=registerCustomType(raw)||canonicalType(raw);if(!type)continue;
+      const existing=[...S.uploadProductTypes].find(x=>sameType(x,type));
+      S.uploadProductTypes.add(existing||type);
+    }
     input.value='';render();
   }
 
   const baseBindUpload=bindUpload;
   bindUpload=function(){
     baseBindUpload();
-    document.querySelector('[data-add-upload-product-type]')?.addEventListener('click',addUploadType);
+    document.querySelector('[data-add-upload-product-type]')?.addEventListener('click',addUploadTypes);
     document.getElementById('upload-custom-product-type')?.addEventListener('keydown',event=>{
-      if(event.key!=='Enter')return;event.preventDefault();addUploadType();
+      if(event.key!=='Enter')return;event.preventDefault();addUploadTypes();
     });
   };
 
@@ -106,18 +115,22 @@
     btn.addEventListener('click',()=>{const next=bridgeToggleEditorType(wrap,type);btn.classList.toggle('active',next)});
     box.append(btn);return btn;
   }
-  function addEditorType(wrap){
-    const input=wrap.querySelector('#edit-custom-product-type');if(!input)return;
-    const raw=cleanType(input.value);if(!raw)return toast('请输入产品类型');
+  function ensureEditorTypeSelected(wrap,raw){
     const builtin=builtinType(raw);
     if(builtin){
       const btn=[...wrap.querySelectorAll('[data-app-type]')].find(x=>sameType(x.dataset.appType,builtin));
       if(btn&&!btn.classList.contains('active'))btn.click();
-      input.value='';return;
+      return builtin;
     }
-    const type=registerCustomType(raw),existing=[...wrap.querySelectorAll('[data-custom-edit-product-type]')].find(x=>sameType(x.dataset.customEditProductType,type));
-    if(existing){if(!existing.classList.contains('active'))existing.click()}
-    else{const active=bridgeToggleEditorType(wrap,type);makeEditorCustomButton(wrap,type,active)}
+    const type=registerCustomType(raw);if(!type)return'';
+    const existing=[...wrap.querySelectorAll('[data-custom-edit-product-type]')].find(x=>sameType(x.dataset.customEditProductType,type));
+    if(existing){if(!existing.classList.contains('active'))existing.click();return type}
+    const active=bridgeToggleEditorType(wrap,type);makeEditorCustomButton(wrap,type,active);return type;
+  }
+  function addEditorTypes(wrap){
+    const input=wrap.querySelector('#edit-custom-product-type');if(!input)return;
+    const raws=parseTypes(input.value);if(!raws.length)return toast('请输入产品类型');
+    for(const raw of raws)ensureEditorTypeSelected(wrap,raw);
     input.value='';
   }
   function enhanceEditor(){
@@ -128,8 +141,8 @@
     const selectedSet=new Set(selected.filter(type=>!builtinType(type)));
     for(const type of customTypes())makeEditorCustomButton(wrap,type,[...selectedSet].some(x=>sameType(x,type)));
     field.insertAdjacentHTML('beforeend',addControl('editor'));
-    wrap.querySelector('[data-add-edit-product-type]')?.addEventListener('click',()=>addEditorType(wrap));
-    wrap.querySelector('#edit-custom-product-type')?.addEventListener('keydown',event=>{if(event.key!=='Enter')return;event.preventDefault();addEditorType(wrap)});
+    wrap.querySelector('[data-add-edit-product-type]')?.addEventListener('click',()=>addEditorTypes(wrap));
+    wrap.querySelector('#edit-custom-product-type')?.addEventListener('keydown',event=>{if(event.key!=='Enter')return;event.preventDefault();addEditorTypes(wrap)});
   }
 
   document.addEventListener('click',event=>{
